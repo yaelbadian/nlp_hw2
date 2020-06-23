@@ -27,11 +27,10 @@ class DependencyParser(nn.Module):
         pos_embeds = self.pos_embedding(pos_embed_idx.to(self.device))  # [batch_size, seq_length, emb_dim]
         embeds = torch.cat((word_embeds, pos_embeds), dim=2)  # [batch_size, seq_length, 2*emb_dim]
         lstm_out, _ = self.lstm(embeds.view(embeds.shape[1], 1, -1))  # [seq_length, batch_size, 2*hidden_dim]
-        h_out = self.mlp_h(lstm_out).view(1, lstm_out.shape[1], -1)
-        m_out = self.mlp_m(lstm_out).view(1, lstm_out.shape[1], -1)
-        scores = torch.unsqueeze(h_out, 2) + torch.unsqueeze(m_out, 1)  ##############
-        scores = self.mlp(self.activation(scores))
+        h_out = self.mlp_h(lstm_out).view(1, lstm_out.shape[1], -1)   # [batch_size, seq_length, mlp_size]
+        m_out = self.mlp_m(lstm_out).view(1, lstm_out.shape[1], -1)   # [batch_size, seq_length, mlp_size]
+        scores = torch.unsqueeze(h_out, 2) + torch.unsqueeze(m_out, 1)  # [batch_size, seq_length, seq_length, mlp_size]
+        scores = self.mlp(self.activation(scores)) # [batch_size, seq_length, seq_length, 1]
         scores = scores.view(1, sentence_len, sentence_len)
-
         return scores
 
