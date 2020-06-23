@@ -1,4 +1,12 @@
 from collections import defaultdict
+from torchtext.vocab import Vocab
+from collections import Counter
+import pickle
+
+UNKNOWN_TOKEN = "<unk>"
+PAD_TOKEN = "<pad>"  # Optional: this is used to pad a batch of sentences in different lengths.
+ROOT_TOKEN = "<root>"  # use this if you are padding your batches and want a special token for ROOT
+SPECIAL_TOKENS = [ROOT_TOKEN, PAD_TOKEN, UNKNOWN_TOKEN]
 
 
 def split(string, delimiters):
@@ -18,49 +26,70 @@ def clean_word(word):
     return word.lower()
 
 
-def get_vocabs(list_of_paths):
-    word_dict = defaultdict(int)
-    pos_dict = defaultdict(int)
-    for file_path in list_of_paths:
-        with open(file_path) as f:
-            for line in f:
-                if line == '\n':
-                    continue
-                splited_words = split(line, ('\t', '\n'))
-                word = clean_word(splited_words[1])
-                pos_tag = splited_words[3]
-                word_dict[word] += 1
-                pos_dict[pos_tag] += 1
+class DataMapping:
+    def __init__(self, list_of_paths, word_embeddings=None):
+        self.word_dict, self.pos_dict = self.get_vocabs(list_of_paths)
+        self.vocab_size = len(self.word_dict)
+        if word_embeddings:
+            self.word_idx_mappings, self.idx_word_mappings, self.word_vectors = word_embeddings
+        else:
+            self.word_idx_mappings, self.idx_word_mappings, self.word_vectors = self.init_word_embeddings(
+                self.word_dict)
+        self.pos_idx_mappings, self.idx_pos_mappings = self.init_pos_vocab(self.pos_dict)
+        # self.pad_idx = self.word_idx_mappings.get(PAD_TOKEN)
+        # self.unknown_idx = self.word_idx_mappings.get(UNKNOWN_TOKEN)
+        # self.word_vector_dim = self.word_vectors.size(-1)
 
-    return word_dict, pos_dict
+    @staticmethod
+    def get_vocabs(list_of_paths):
+        word_dict = defaultdict(int)
+        pos_dict = defaultdict(int)
+        for file_path in list_of_paths:
+            with open(file_path) as f:
+                for line in f:
+                    if line == '\n':
+                        continue
+                    splited_words = split(line, ('\t', '\n'))
+                    word = clean_word(splited_words[1])
+                    pos_tag = splited_words[3]
+                    word_dict[word] += 1
+                    pos_dict[pos_tag] += 1
 
+        return word_dict, pos_dict
 
-class DataReader:
-    def __init__(self, file, word_dict, pos_dict):
-        self.file = file
-        self.word_dict = word_dict
-        self.pos_dict = pos_dict
-        self.sentences = []
-        self.read_data()
+    @staticmethod
+    def init_word_embeddings(word_dict):
+        glove = Vocab(Counter(word_dict), vectors="glove.6B.300d", specials=SPECIAL_TOKENS)
+        return glove.stoi, glove.itos, glove.vectors
 
-    def read_data(self):
-        cur_sentence = []
-        with open(self.file, 'r') as f:
-            for line in f:
-                if line == '\n':
-                    self.sentences.append(cur_sentence)
-                    cur_sentence = []
-                    continue
-                splited_words = split(line, ('\t', '\n'))
-                # del splited_words[-1]
-                idx = splited_words[0]
-                word = clean_word(splited_words[1])
-                pos_tag = splited_words[3]
-                header = splited_words[6]
-                cur_sentence.append((idx, word, pos_tag, header))
+    def get_word_embeddings(self):
+        return self.word_idx_mappings, self.idx_word_mappings, self.word_vectors
 
-    def get_num_sentences(self):
-        """returns num of sentences in data"""
-        return len(self.sentences)
+    def init_pos_vocab(self, pos_dict):
+        idx_pos_mappings = []
+        pos_idx_mappings = {}
 
+        for i, pos in enumerate(sorted(SPECIAL_TOKENS)):
+            pos_idx_mappings[str(pos)] = i
+            idx_pos_mappings.append(str(pos))
 
+        n = len(SPECIAL_TOKENS)
+        for i, pos in enumerate(sorted(pos_dict.keys())):
+            # pos_idx_mappings[str(pos)] = int(i)
+            pos_idx_mappings[str(pos)] = i + n
+            idx_pos_mappings.append(str(pos))
+        print("idx_pos_mappings -", idx_pos_mappings)
+        print("pos_idx_mappings -", pos_idx_mappings)
+        return pos_idx_mappings, idx_pos_mappings
+
+    def get_pos_vocab(self):
+        return self.pos_idx_mappings, self.idx_pos_mappings
+
+    def save(self, path):
+        with open(path, 'wb') as file:
+            return pickle.dump(self, file)
+
+    @staticmethod
+    def load(path):
+        with open(path, 'rb') as file:
+            return pickle.load(file)
