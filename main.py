@@ -1,4 +1,5 @@
 import data_reader
+from torch.utils.data.dataloader import DataLoader
 
 
 path_train = "HW2-files/train.labeled"
