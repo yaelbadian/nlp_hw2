@@ -89,7 +89,6 @@ class DepParserDataset(Dataset):
             sentence_pos_idx_list.append(torch.tensor(pos_idx_list, dtype=torch.long, requires_grad=False))
             sentence_header_list.append(torch.tensor(header_list, dtype=torch.long, requires_grad=False))
             sentence_len_list.append(sentence_len)
-
         # if padding:
         #     all_sentence_word_idx = torch.tensor(sentence_word_idx_list, dtype=torch.long)
         #     all_sentence_pos_idx = torch.tensor(sentence_pos_idx_list, dtype=torch.long)
