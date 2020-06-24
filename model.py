@@ -1,17 +1,12 @@
-import pandas as pd
-import numpy as np
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
-import torch.optim as optim
-import random
-from torch.utils.data.dataloader import DataLoader
 
 
 class DependencyParser(nn.Module):
     def __init__(self, word_vocab_size, pos_vocab_size, word_emb_dim=100, pos_emb_dim=25, hidden_dim=125, mlp_dim=100, lstm_layers=2):
         super(DependencyParser, self).__init__()
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.use_coda = True if torch.cuda.is_available() else False
+        self.device = torch.device("cuda:0" if self.use_coda else "cpu")
         self.word_embedding = nn.Embedding(word_vocab_size, word_emb_dim)
         self.pos_embedding = nn.Embedding(pos_vocab_size, pos_emb_dim)
         self.lstm = nn.LSTM(input_size=(word_emb_dim+pos_emb_dim), hidden_size=hidden_dim, num_layers=lstm_layers,

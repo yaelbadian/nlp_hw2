@@ -55,12 +55,13 @@ class DepParserDataset(Dataset):
             pos_idx_list = []
             header_list = []
             for idx, word, pos, header in sentence:
-                prob = self.alpha_dropout / (self.data_mapping.word_dict[word] + self.alpha_dropout)
-                if prob > np.random.rand():
-                    word = UNKNOWN_TOKEN
+                if self.alpha_dropout > 0:
+                    prob = self.alpha_dropout / (self.data_mapping.word_dict[word] + self.alpha_dropout)
+                    if prob > np.random.rand():
+                        word = UNKNOWN_TOKEN
                 words_idx_list.append(self.data_mapping.word_idx_mappings.get(word, self.data_mapping.word_idx_mappings[UNKNOWN_TOKEN]))
                 pos_idx_list.append(self.data_mapping.pos_idx_mappings.get(pos, self.data_mapping.pos_idx_mappings[UNKNOWN_TOKEN]))
-                header_list.append(header)
+                header_list.append(int(header))
             sentence_len = len(words_idx_list)
             # if padding:
             #     while len(words_idx_list) < self.max_seq_len:

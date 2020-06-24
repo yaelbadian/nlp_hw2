@@ -68,18 +68,9 @@ class DataMapping:
     def init_pos_vocab(self, pos_dict):
         idx_pos_mappings = []
         pos_idx_mappings = {}
-
-        for i, pos in enumerate(sorted(SPECIAL_TOKENS)):
+        for i, pos in enumerate(sorted(SPECIAL_TOKENS) + sorted(pos_dict.keys())):
             pos_idx_mappings[str(pos)] = i
             idx_pos_mappings.append(str(pos))
-
-        n = len(SPECIAL_TOKENS)
-        for i, pos in enumerate(sorted(pos_dict.keys())):
-            # pos_idx_mappings[str(pos)] = int(i)
-            pos_idx_mappings[str(pos)] = i + n
-            idx_pos_mappings.append(str(pos))
-        print("idx_pos_mappings -", idx_pos_mappings)
-        print("pos_idx_mappings -", pos_idx_mappings)
         return pos_idx_mappings, idx_pos_mappings
 
     def get_pos_vocab(self):
