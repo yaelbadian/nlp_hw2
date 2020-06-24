@@ -46,7 +46,7 @@ def train(net, train_loader, test_loader, path='models/', epochs=10):
             best_acc = test_acc
         print(f"Epoch [{epoch + 1}/{epochs}] Completed \t Test Loss: {test_loss:.3f}"
               f" \t Test Accuracy: {test_acc:.3f} \t Time: {(time.time() - t0) / 60:.2f}")
-    plot(test_acc_lst, test_loss_lst, path + 'base_model_plot.png')
+    plot(test_acc_lst, test_loss_lst, path + '_plot.png')
 
 
 def predict_dep(scores):
