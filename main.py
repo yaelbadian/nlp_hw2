@@ -3,6 +3,7 @@ from torch.utils.data.dataloader import DataLoader
 from data_set import DepParserDataset
 from data_reader import DataMapping
 from model import DependencyParser
+from advanced_model import DependencyParser as advancedDependencyParser
 import train_model
 
 path_train = "HW2-files/train.labeled"
@@ -16,7 +17,9 @@ train = DepParserDataset(data_mapping, path_train)
 train_loader = DataLoader(train, shuffle=True)
 test = DepParserDataset(data_mapping, path_test, alpha_dropout=0)
 test_loader = DataLoader(test, shuffle=False)
-net = DependencyParser(word_vocab_size, pos_vocab_size)
+# net = DependencyParser(word_vocab_size, pos_vocab_size)
+word_embeddings = data_mapping.word_vectors
+net = advancedDependencyParser(word_embeddings, pos_vocab_size)
 
 train_model.train(net, train_loader, test_loader, path='models/', epochs=10)
 
