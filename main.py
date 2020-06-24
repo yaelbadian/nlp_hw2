@@ -6,6 +6,7 @@ from model import DependencyParser
 from advanced_model import DependencyParser as AdvancedDependencyParser
 import train_model
 
+
 path_train = "HW2-files/train.labeled"
 path_test = "HW2-files/test.labeled"
 paths_list = [path_train, path_test]
