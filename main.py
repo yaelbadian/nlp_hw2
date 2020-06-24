@@ -27,7 +27,7 @@ paths_list = [path_train, path_test]
 
 # --------- training advanced model ---------- #
 vectors_strs = ["glove.6B.300d", "fasttext.en.300d", "glove.42B.300d", "glove.twitter.27B.200d"]
-pos_emb_dim_lst = [15, 25]
+pos_emb_dim_lst = [25, 15]
 hidden_dim_fac_lst = [0.4, 0.5]
 mlp_dim_fac_lst = [0.4, 0.5]
 lstm_layers_lst = [2, 3, 4]
