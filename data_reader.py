@@ -1,7 +1,7 @@
 from collections import defaultdict
 from torchtext.vocab import Vocab
 from collections import Counter
-import pickle
+import torch
 
 UNKNOWN_TOKEN = "<unk>"
 PAD_TOKEN = "<pad>"  # Optional: this is used to pad a batch of sentences in different lengths.
@@ -77,10 +77,8 @@ class DataMapping:
         return self.pos_idx_mappings, self.idx_pos_mappings
 
     def save(self, path):
-        with open(path, 'wb') as file:
-            return pickle.dump(self, file)
+        torch.save(self, path)
 
     @staticmethod
     def load(path):
-        with open(path, 'rb') as file:
-            return pickle.load(file)
+        return torch.load(path)
