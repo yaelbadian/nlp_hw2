@@ -26,13 +26,12 @@ paths_list = [path_train, path_test]
 
 
 # --------- training advanced model ---------- #
-vectors_strs = ["glove.6B.300d", "fasttext.en.300d", "fasttext.simple.300d", "glove.42B.300d",
-                "glove.840B.300d", "glove.twitter.27B.200d"]
+vectors_strs = ["glove.6B.300d", "fasttext.en.300d", "glove.42B.300d", "glove.twitter.27B.200d"]
 pos_emb_dim_lst = [15, 25]
-hidden_dim_fac_lst = [0.3, 0.4, 0.5]
-mlp_dim_fac_lst = [0.3, 0.4, 0.5]
+hidden_dim_fac_lst = [0.4, 0.5]
+mlp_dim_fac_lst = [0.4, 0.5]
 lstm_layers_lst = [2, 3, 4]
-lstm_dropout_lst = [0, 0.1, 0.3]
+lstm_dropout_lst = [0, 0.1]
 
 for vectors_str in vectors_strs:
     data_mapping = DataMapping(paths_list, vectors_str=vectors_str)
