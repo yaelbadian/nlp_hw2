@@ -28,12 +28,11 @@ paths_list = [path_train, path_test]
 # --------- training advanced model ---------- #
 vectors_strs = ["glove.6B.300d", "fasttext.en.300d", "fasttext.simple.300d", "glove.42B.300d",
                 "glove.840B.300d", "glove.twitter.27B.200d"]
-
-lstm_dropout_lst = [0, 0.1, 0.3]
-lstm_layers_lst = [2, 3, 4]
 pos_emb_dim_lst = [15, 25]
 hidden_dim_fac_lst = [0.3, 0.4, 0.5]
 mlp_dim_fac_lst = [0.3, 0.4, 0.5]
+lstm_layers_lst = [2, 3, 4]
+lstm_dropout_lst = [0, 0.1, 0.3]
 
 for vectors_str in vectors_strs:
     data_mapping = DataMapping(paths_list, vectors_str=vectors_str)
@@ -46,15 +45,16 @@ for vectors_str in vectors_strs:
     word_embeddings = data_mapping.word_vectors
     word_embedding_dim = word_embeddings.shape[1]
     data_mapping.save(f"models/data_mapping_{vectors_str.replace('.', '')}.pkl")
-    for lstm_dropout in lstm_dropout_lst:
-        for lstm_layers in lstm_layers_lst:
-            for pos_emb_dim in pos_emb_dim_lst:
-                for hidden_dim_fac in hidden_dim_fac_lst:
-                    for mlp_dim_fac in mlp_dim_fac_lst:
+    for pos_emb_dim in pos_emb_dim_lst:
+        for hidden_dim_fac in hidden_dim_fac_lst:
+            for mlp_dim_fac in mlp_dim_fac_lst:
+                for lstm_dropout in lstm_dropout_lst:
+                    for lstm_layers in lstm_layers_lst:
                         hidden_dim = int((word_embedding_dim + pos_emb_dim) * hidden_dim_fac)
                         mlp_dim = int(hidden_dim * 2 * mlp_dim_fac)
                         net = AdvancedDependencyParser(word_embeddings, pos_vocab_size, pos_emb_dim, hidden_dim,
                                                        mlp_dim, lstm_layers, lstm_dropout)
-                        path_str = f"models/{vectors_str.replace('.', '')}_{str(lstm_dropout).replace('.', '')}" \
-                                   f"_{lstm_layers}_{pos_emb_dim}_{hidden_dim}_{mlp_dim}_"
+                        path_str = f"models/{vectors_str.replace('.', '')}_{pos_emb_dim}_{hidden_dim}_{mlp_dim}" \
+                                   f"_{lstm_layers}_{str(lstm_dropout).replace('.', '')}"
+                        print('\n#----------', path_str.replace('_', ' '), '----------#')
                         train_model.train(net, train_loader, test_loader, path=path_str, epochs=10)
