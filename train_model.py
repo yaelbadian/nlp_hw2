@@ -45,7 +45,7 @@ def train(net, train_loader, test_loader, path='/models/', epochs=10):
             net.save(tmp_path)
         print(f"Epoch [{epoch + 1}/{epochs}] Completed \t Test Loss: {test_loss:.3f}"
               f" \t Test Accuracy: {test_acc:.3f} \t Time: {(time.time() - t0) / 60:.2f}")
-    plot(test_acc_lst, test_loss_lst, path)
+    plot(test_acc_lst, test_loss_lst, path + 'base_model_plot.png')
 
 
 def predict_dep(scores):
