@@ -18,7 +18,7 @@ test = DepParserDataset(data_mapping, path_test, alpha_dropout=0)
 test_loader = DataLoader(test, shuffle=False)
 net = DependencyParser(word_vocab_size, pos_vocab_size)
 
-train_model.train(net, train_loader, test_loader, path='/models/', epochs=10)
+train_model.train(net, train_loader, test_loader, path='models/', epochs=10)
 
 
 

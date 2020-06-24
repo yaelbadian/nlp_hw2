@@ -14,7 +14,7 @@ def loss_func(scores, target, nllloss):
     return output
 
 
-def train(net, train_loader, test_loader, path='/models/', epochs=10):
+def train(net, train_loader, test_loader, path='models/', epochs=10):
     optimizer = optim.Adam(net.parameters(), lr=0.01)
     acumulate_grad_steps = 50
     nllloss = NLLLoss(ignore_index=-1)
@@ -25,7 +25,7 @@ def train(net, train_loader, test_loader, path='/models/', epochs=10):
     # Training start
     print("Training Started")
     test_loss_lst, test_acc_lst = [], []
-    acc_best = 0
+    best_acc = 0
     for epoch in range(epochs):
         t0 = time.time()
         for i, sentence in enumerate(train_loader):
@@ -40,9 +40,10 @@ def train(net, train_loader, test_loader, path='/models/', epochs=10):
         test_acc, test_loss = predict(net, device, test_loader, nllloss)
         test_loss_lst.append(test_loss)
         test_acc_lst.append(test_acc)
-        if acc_best < test_acc and epoch > 5:
+        if best_acc < test_acc and epoch > 5:
             tmp_path = path + 'epoch_' + str(epoch) + '_acc_' + str(np.round(test_acc, 4)).replace('.', '') + '.pt'
             net.save(tmp_path)
+            best_acc = test_acc
         print(f"Epoch [{epoch + 1}/{epochs}] Completed \t Test Loss: {test_loss:.3f}"
               f" \t Test Accuracy: {test_acc:.3f} \t Time: {(time.time() - t0) / 60:.2f}")
     plot(test_acc_lst, test_loss_lst, path + 'base_model_plot.png')
@@ -77,7 +78,7 @@ def plot(accuracies, losses, path):
     fig, ax1 = plt.subplots(figsize=(7, 4))
     ax1.set_xlabel('Epoch')
     ax1.set_ylabel('Loss')
-    ax1.plot(list(range(len(losses))), losses, color='turquoise', lw=1.5)
+    ax1.plot(list(range(1, 1+len(losses))), losses, color='turquoise', lw=1.5)
     ax1.tick_params(axis='y', labelcolor='turquoise')
     ax2 = ax1.twinx()
     ax2.set_ylabel('UAS')
