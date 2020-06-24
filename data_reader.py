@@ -27,14 +27,14 @@ def clean_word(word):
 
 
 class DataMapping:
-    def __init__(self, list_of_paths, word_embeddings=None):
+    def __init__(self, list_of_paths, word_embeddings=None, vectors_str="glove.6B.300d"):
         self.word_dict, self.pos_dict = self.get_vocabs(list_of_paths)
         self.vocab_size = len(self.word_dict)
         if word_embeddings:
             self.word_idx_mappings, self.idx_word_mappings, self.word_vectors = word_embeddings
         else:
             self.word_idx_mappings, self.idx_word_mappings, self.word_vectors = self.init_word_embeddings(
-                self.word_dict)
+                self.word_dict, vectors_str)
         self.pos_idx_mappings, self.idx_pos_mappings = self.init_pos_vocab(self.pos_dict)
         # self.pad_idx = self.word_idx_mappings.get(PAD_TOKEN)
         # self.unknown_idx = self.word_idx_mappings.get(UNKNOWN_TOKEN)
@@ -58,8 +58,8 @@ class DataMapping:
         return word_dict, pos_dict
 
     @staticmethod
-    def init_word_embeddings(word_dict):
-        glove = Vocab(Counter(word_dict), vectors="glove.6B.300d", specials=SPECIAL_TOKENS)
+    def init_word_embeddings(word_dict, vectors_str="glove.6B.300d"):
+        glove = Vocab(Counter(word_dict), vectors=vectors_str, specials=SPECIAL_TOKENS)
         return glove.stoi, glove.itos, glove.vectors
 
     def get_word_embeddings(self):

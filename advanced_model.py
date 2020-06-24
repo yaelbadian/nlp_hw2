@@ -3,15 +3,15 @@ import torch.nn as nn
 
 
 class DependencyParser(nn.Module):
-    def __init__(self, word_embeddings, pos_vocab_size, word_emb_dim=100, pos_emb_dim=25, hidden_dim=125, mlp_dim=100,
-                 lstm_layers=2):
+    def __init__(self, word_embeddings, pos_vocab_size, pos_emb_dim=25, hidden_dim=125, mlp_dim=100,
+                 lstm_layers=2, lstm_dropout=0):
         super(DependencyParser, self).__init__()
         self.use_coda = True if torch.cuda.is_available() else False
         self.device = torch.device("cuda:0" if self.use_coda else "cpu")
         self.word_embedding = nn.Embedding.from_pretrained(word_embeddings.to(self.device))
         self.pos_embedding = nn.Embedding(pos_vocab_size, pos_emb_dim)
-        self.lstm = nn.LSTM(input_size=(word_emb_dim+pos_emb_dim), hidden_size=hidden_dim, num_layers=lstm_layers,
-                            bidirectional=True)
+        self.lstm = nn.LSTM(input_size=(word_embeddings.shape[1]+pos_emb_dim), hidden_size=hidden_dim, num_layers=lstm_layers,
+                            bidirectional=True, dropout=lstm_dropout)
         self.mlp_h = nn.Linear(hidden_dim*2, mlp_dim)
         self.mlp_m = nn.Linear(hidden_dim*2, mlp_dim)
         self.activation = nn.Tanh()
