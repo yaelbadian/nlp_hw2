@@ -45,6 +45,7 @@ for vectors_str in vectors_strs:
     # net = DependencyParser(word_vocab_size, pos_vocab_size)
     word_embeddings = data_mapping.word_vectors
     word_embedding_dim = word_embeddings.shape[1]
+    data_mapping.save(f"models/data_mapping_{vectors_str.replace('.', '')}.pkl")
     for lstm_dropout in lstm_dropouts:
         for lstm_layer in lstm_layers:
             for pos_emb_dim in pos_emb_dims:
@@ -54,12 +55,6 @@ for vectors_str in vectors_strs:
                         mlp_dim = int(hidden_dim * 2 * mlp)
                         net = AdvancedDependencyParser(word_embeddings, pos_vocab_size, pos_emb_dim, hidden_dim,
                                                        mlp_dim, lstm_layers, lstm_dropout)
-                        path_str = f"models/{vectors_str.replace('.', '')}_{str(lstm_dropout).replace('.', '')}_{lstm_layer}_" \
-                                   f"{pos_emb_dim}_{hidden_dim}_{mlp_dim}_"
+                        path_str = f"models/{vectors_str.replace('.', '')}_{str(lstm_dropout).replace('.', '')}" \
+                                   f"_{lstm_layer}_{pos_emb_dim}_{hidden_dim}_{mlp_dim}_"
                         train_model.train(net, train_loader, test_loader, path=path_str, epochs=10)
-
-
-
-
-
-
