@@ -75,7 +75,7 @@ def predict(net, device, loader, nllloss):
 
 
 def plot(accuracies, losses, path):
-    fig, ax1 = plt.subplots(figsize=(7, 4))
+    fig, ax1 = plt.subplots(figsize=(8, 3.5))
     ax1.set_xlabel('Epoch')
     ax1.set_ylabel('Loss')
     ax1.plot(list(range(1, 1+len(losses))), losses, color='turquoise', lw=1.5)
