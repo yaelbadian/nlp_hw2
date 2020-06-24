@@ -1,7 +1,6 @@
 from torch.nn import LogSoftmax, NLLLoss
 import torch.optim as optim
 import numpy as np
-import torch
 from chu_liu_edmonds import decode_mst
 import matplotlib.pyplot as plt
 import time

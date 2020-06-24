@@ -38,7 +38,7 @@ class DepParserDataset(Dataset):
                 idx = splited_words[0]
                 word = clean_word(splited_words[1])
                 pos_tag = splited_words[3]
-                header = splited_words[6]
+                header = int(splited_words[6])
                 cur_sentence.append((idx, word, pos_tag, header))
 
     def get_num_sentences(self):
@@ -61,7 +61,7 @@ class DepParserDataset(Dataset):
                         word = UNKNOWN_TOKEN
                 words_idx_list.append(self.data_mapping.word_idx_mappings.get(word, self.data_mapping.word_idx_mappings[UNKNOWN_TOKEN]))
                 pos_idx_list.append(self.data_mapping.pos_idx_mappings.get(pos, self.data_mapping.pos_idx_mappings[UNKNOWN_TOKEN]))
-                header_list.append(int(header))
+                header_list.append(header)
             sentence_len = len(words_idx_list)
             # if padding:
             #     while len(words_idx_list) < self.max_seq_len:
@@ -76,7 +76,6 @@ class DepParserDataset(Dataset):
         #     all_sentence_pos_idx = torch.tensor(sentence_pos_idx_list, dtype=torch.long)
         #     all_sentence_len = torch.tensor(sentence_len_list, dtype=torch.long, requires_grad=False)
         #     return TensorDataset(all_sentence_word_idx, all_sentence_pos_idx, all_sentence_len)
-
         return {i: sample_tuple for i, sample_tuple in enumerate(zip(sentence_word_idx_list,
                                                                      sentence_pos_idx_list,
                                                                      sentence_header_list,
