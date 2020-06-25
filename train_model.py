@@ -1,4 +1,5 @@
 from torch.nn import LogSoftmax, NLLLoss
+import torch
 import torch.optim as optim
 import numpy as np
 from chu_liu_edmonds import decode_mst
@@ -14,17 +15,16 @@ def loss_func(scores, target, nllloss):
     return output
 
 
-def train(net, train_loader, test_loader, path='models/', epochs=10):
+def train(net, train_loader, test_loader, path='models/', epochs=10, plot_train=False):
     optimizer = optim.Adam(net.parameters(), lr=0.01)
-    acumulate_grad_steps = 50
+    acumulate_grad_steps = 100
     nllloss = NLLLoss(ignore_index=-1)
     net.train()
     device = net.device
     if net.use_coda:
         net.cuda()
-    # Training start
     print("Training Started")
-    test_loss_lst, test_acc_lst = [], []
+    test_loss_lst, test_acc_lst, train_loss_lst, train_acc_lst = [], [], [], []
     best_acc = 0
     for epoch in range(epochs):
         t0 = time.time()
@@ -35,18 +35,25 @@ def train(net, train_loader, test_loader, path='models/', epochs=10):
             loss = loss / acumulate_grad_steps
             loss.backward()
             if i % acumulate_grad_steps == 0:
+                # torch.nn.utils.clip_grad_norm_(net.parameters(), 0.5)
                 optimizer.step()
                 net.zero_grad()
         test_acc, test_loss = predict(net, device, test_loader, nllloss)
         test_loss_lst.append(test_loss)
         test_acc_lst.append(test_acc)
-        if best_acc < test_acc and epoch > 5:
+        if plot_train:
+            train_acc, train_loss = predict(net, device, train_loader, nllloss)
+            train_loss_lst.append(train_loss)
+            train_acc_lst.append(train_acc)
+        if best_acc < test_acc and epoch > 5 and test_acc > 0.876:
             tmp_path = path + 'epoch_' + str(epoch) + '_acc_' + str(np.round(test_acc, 4)).replace('.', '') + '.pt'
             net.save(tmp_path)
             best_acc = test_acc
         print(f"Epoch [{epoch + 1}/{epochs}] Completed \t Test Loss: {test_loss:.3f}"
               f" \t Test Accuracy: {test_acc:.3f} \t Time: {(time.time() - t0) / 60:.2f}")
-    plot(test_acc_lst, test_loss_lst, path + '_plot.png')
+    plot(test_acc_lst, test_loss_lst, path + '_test_plot.png')
+    if plot_train:
+        plot(train_acc_lst, train_loss_lst, path + '_train_plot.png')
 
 
 def predict_dep(scores):
