@@ -5,6 +5,7 @@ from data_reader import DataMapping
 from model import *
 import train_model
 
+
 path_train = "HW2-files/train.labeled"
 path_train2 = "HW2-files/new_data_train.labeled"
 path_test = "HW2-files/test.labeled"
