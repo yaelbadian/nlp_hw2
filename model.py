@@ -55,7 +55,7 @@ class DependencyParser(nn.Module):
                             bidirectional=True, dropout=lstm_dropout)
         self.mlp_h = nn.Linear(hidden_dim * 2, mlp_dim)
         self.mlp_m = nn.Linear(hidden_dim * 2, mlp_dim)
-        self.activation = nn.Tanh()
+        self.activation = nn.Softplus()
         self.mlp = nn.Linear(mlp_dim, 1)
 
     def forward(self, sentence):
@@ -64,8 +64,8 @@ class DependencyParser(nn.Module):
         pos_embeds = self.pos_embedding(pos_embed_idx.to(self.device))  # [batch_size, seq_length, emb_dim]
         embeds = torch.cat((word_embeds, pos_embeds), dim=2)  # [batch_size, seq_length, 2*emb_dim]
         lstm_out, _ = self.lstm(embeds.view(embeds.shape[1], 1, -1))  # [seq_length, batch_size, 2*hidden_dim]
-        h_out = self.mlp_h(lstm_out).view(1, lstm_out.shape[0], -1)  # [batch_size, seq_length, mlp_size]
-        m_out = self.mlp_m(lstm_out).view(1, lstm_out.shape[0], -1)  # [batch_size, seq_length, mlp_size]
+        h_out = self.mlp_h(lstm_out.view(1, lstm_out.shape[0], -1))  # [batch_size, seq_length, mlp_size]
+        m_out = self.mlp_m(lstm_out.view(1, lstm_out.shape[0], -1))  # [batch_size, seq_length, mlp_size]
         scores = torch.unsqueeze(h_out, 2) + torch.unsqueeze(m_out, 1)  # [batch_size, seq_length, seq_length, mlp_size]
         scores = self.mlp(self.activation(scores))  # [batch_size, seq_length, seq_length, 1]
         scores = scores.view(1, scores.shape[1], scores.shape[2])
@@ -137,6 +137,59 @@ class DependencyParserCombinedAttention(nn.Module):
         self.mlp_h = nn.Linear(hidden_dim * 2, mlp_dim)
         self.mlp_m = nn.Linear(hidden_dim * 2, mlp_dim)
         self.activation = nn.Tanh()
+        self.attention = nn.Parameter(torch.Tensor(1, mlp_dim + 1, mlp_dim))
+        nn.init.zeros_(self.attention)
+        self.mlp = nn.Linear(mlp_dim, 1)
+
+    def forward(self, sentence):
+        word_embed_idx, pos_embed_idx, headers, sentence_len = sentence
+        word_embeds = self.word_embedding(word_embed_idx.to(self.device))  # [batch_size, seq_length, emb_dim]
+        pos_embeds = self.pos_embedding(pos_embed_idx.to(self.device))  # [batch_size, seq_length, emb_dim]
+        embeds = torch.cat((word_embeds, pos_embeds), dim=2)  # [batch_size, seq_length, 2*emb_dim]
+        lstm_out, _ = self.lstm(embeds.view(embeds.shape[1], 1, -1))  # [seq_length, batch_size, 2*hidden_dim]
+        h_out = self.mlp_h(lstm_out).view(1, lstm_out.shape[0], -1)  # [batch_size, seq_length, mlp_size]
+        m_out = self.mlp_m(lstm_out).view(1, lstm_out.shape[0], -1)  # [batch_size, seq_length, mlp_size]
+        # add bias
+        h_out_b = torch.cat((self.activation(h_out), torch.ones_like(h_out[..., :1])), -1)
+        # m_out_b = torch.cat((self.activation(m_out), torch.ones_like(m_out[..., :1])), -1)
+        # attention
+        scores_att = torch.einsum('bxi,oij,byj->boxy', h_out_b, self.attention,
+                                  m_out)  # [batch_size, seq_length, seq_length, 1]
+        scores_att = scores_att.squeeze(1)
+        scores_att = scores_att.view(1, scores_att.shape[1], scores_att.shape[2])
+
+        scores_mlp = torch.unsqueeze(h_out, 2) + torch.unsqueeze(m_out,
+                                                                 1)  # [batch_size, seq_length, seq_length, mlp_size]
+        scores_mlp = self.mlp(self.activation(scores_mlp))  # [batch_size, seq_length, seq_length, 1]
+        scores_mlp = scores_mlp.view(1, scores_mlp.shape[1], scores_mlp.shape[2])
+
+        scores = scores_att + scores_mlp
+        return scores
+
+    def save(self, path):
+        torch.save(self.state_dict(), path)
+
+    def load(self, path):
+        self.load_state_dict(torch.load(path, map_location=self.device))
+
+
+
+class DependencyParserCombined(nn.Module):
+    def __init__(self, word_embeddings, pos_vocab_size, pos_emb_dim=25, hidden_dim=125, mlp_dim=100,
+                 word_lin_dim=150, pos_lin_dim=20, lstm_layers=2, lstm_dropout=0):
+        super(DependencyParserCombined, self).__init__()
+        self.use_coda = True if torch.cuda.is_available() else False
+        self.device = torch.device("cuda:0" if self.use_coda else "cpu")
+        self.word_embedding = nn.Embedding.from_pretrained(word_embeddings.to(self.device))
+        self.pos_embedding = nn.Embedding(pos_vocab_size, pos_emb_dim)
+        self.word_linear = nn.Sequential(nn.Linear(word_embeddings.shape[1], word_lin_dim), nn.Softplus())
+        self.pos_linear = nn.Sequential(nn.Linear(pos_emb_dim, pos_lin_dim), nn.Softplus())
+        self.lstm = nn.LSTM(input_size=(word_lin_dim + pos_lin_dim), hidden_size=hidden_dim,
+                            num_layers=lstm_layers,
+                            bidirectional=True, dropout=lstm_dropout)
+        self.mlp_h = nn.Linear(hidden_dim * 2, mlp_dim)
+        self.mlp_m = nn.Linear(hidden_dim * 2, mlp_dim)
+        self.activation = nn.Tanh()
         self.attention = nn.Parameter(torch.Tensor(1, mlp_dim + 1, mlp_dim + 1))
         nn.init.zeros_(self.attention)
         self.mlp = nn.Linear(mlp_dim, 1)
@@ -145,6 +198,8 @@ class DependencyParserCombinedAttention(nn.Module):
         word_embed_idx, pos_embed_idx, headers, sentence_len = sentence
         word_embeds = self.word_embedding(word_embed_idx.to(self.device))  # [batch_size, seq_length, emb_dim]
         pos_embeds = self.pos_embedding(pos_embed_idx.to(self.device))  # [batch_size, seq_length, emb_dim]
+        word_embeds = self.word_linear(word_embeds)  # [batch_size, seq_length, lin_dim]
+        pos_embeds = self.pos_linear(pos_embeds)  # [batch_size, seq_length, lin_dim]
         embeds = torch.cat((word_embeds, pos_embeds), dim=2)  # [batch_size, seq_length, 2*emb_dim]
         lstm_out, _ = self.lstm(embeds.view(embeds.shape[1], 1, -1))  # [seq_length, batch_size, 2*hidden_dim]
         h_out = self.mlp_h(lstm_out).view(1, lstm_out.shape[0], -1)  # [batch_size, seq_length, mlp_size]
@@ -192,7 +247,7 @@ class DependencyParserLinear(nn.Module):
 
     def forward(self, sentence):
         word_embed_idx, pos_embed_idx, headers, sentence_len = sentence
-        word_embeds = self.word_embedding(word_embed_idx.to(self.device))  # [batch_size, seq_length, emb_dim]
+        word_embeds = self.word_embedding(word_embed_idx.to(self.device)).freeze()  # [batch_size, seq_length, emb_dim]
         pos_embeds = self.pos_embedding(pos_embed_idx.to(self.device))  # [batch_size, seq_length, emb_dim]
         word_embeds = self.word_linear(word_embeds)  # [batch_size, seq_length, lin_dim]
         pos_embeds = self.pos_linear(pos_embeds)  # [batch_size, seq_length, lin_dim]
@@ -266,7 +321,7 @@ class DependencyParserTransformer(nn.Module):
             mask = self._generate_square_subsequent_mask(len(embeds)).to(self.device)
             self.src_mask = mask
 
-        src = embeds * 1
+        src = embeds * math.sqrt(self.ninp)
         src = self.pos_encoder(src)
         trans_out = self.transformer_encoder(src, self.src_mask)
 

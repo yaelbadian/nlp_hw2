@@ -38,7 +38,10 @@ class DepParserDataset(Dataset):
                 idx = splited_words[0]
                 word = clean_word(splited_words[1])
                 pos_tag = splited_words[3]
-                header = int(splited_words[6])
+                try:
+                    header = int(splited_words[6])
+                except:
+                    header = -1
                 cur_sentence.append((idx, word, pos_tag, header))
 
     def get_num_sentences(self):
